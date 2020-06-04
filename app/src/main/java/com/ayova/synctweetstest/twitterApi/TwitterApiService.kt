@@ -1,5 +1,6 @@
 package com.ayova.synctweetstest.twitterApi
 
+import android.database.Observable
 import com.ayova.synctweetstest.models.ListOfStatuses
 import com.ayova.synctweetstest.models.OAuthToken
 import retrofit2.Call

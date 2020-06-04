@@ -22,7 +22,7 @@ object TwitterApi {
 
     fun initServiceStream() {
         val retrofit = Retrofit.Builder()
-            .baseUrl(API_URL)
+            .baseUrl(API_STREAM_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         service = retrofit.create(TwitterApiService::class.java)
