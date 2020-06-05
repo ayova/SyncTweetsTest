@@ -1,10 +1,8 @@
 package com.ayova.synctweetstest
 
-import android.database.Observable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
-import android.util.Base64.DEFAULT
 import android.util.Log
 import com.ayova.synctweetstest.models.ListOfStatuses
 import com.ayova.synctweetstest.models.OAuthToken
@@ -17,6 +15,7 @@ class MainActivity : AppCompatActivity() {
 
     val TAG = "myapp"
     lateinit var retrievedToken: String
+    lateinit var allStatuses: ListOfStatuses
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,9 +38,10 @@ class MainActivity : AppCompatActivity() {
                 Log.v(TAG, response.toString())
                 if (response.isSuccessful && body != null) {
                     retrievedToken = body.access_token // assign the access token to be saved later
+                    Log.v(TAG, "Basic ${Base64.encodeToString(concatKeys.toByteArray(), 1738)}")
                     Log.v(TAG, body.toString())
+                    getTweets()
                     getStatusesFilter()
-//                    Log.v(TAG, "Basic ${Base64.encodeToString(concantKeys.toByteArray(), 1738)}")
                 } else {
                     Log.e(TAG, response.errorBody()!!.string())
                 }
@@ -57,8 +57,32 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getStatusesFilter() {
         TwitterApi.initServiceStream()
-        val concatKeys = "${TwitterApi.API_KEY}:${TwitterApi.API_SECRET_KEY}"
+
         val call = TwitterApi.service.getStatusesFilter("Bearer $retrievedToken", "car")
+        call.enqueue(object : Callback<ListOfStatuses> {
+            override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
+                val body = response.body()
+                Log.v(TAG, response.toString())
+                if (response.isSuccessful && body != null) {
+                    //code here
+                    Log.v(TAG, body.toString())
+                } else {
+                    Log.e(TAG, response.errorBody()!!.string())
+                }
+            }
+            override fun onFailure(call: Call<ListOfStatuses>, t: Throwable) {
+                Log.e(TAG, t.message!!)
+            }
+        })
+    }
+
+    /**
+     * Function to get tweet's by list_id...
+     * This a one-time connection, not stream
+     */
+    private fun getTweets(){
+        TwitterApi.initServiceApi()
+        val call = TwitterApi.service.getTweets("Bearer $retrievedToken")
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
                 val body = response.body()
