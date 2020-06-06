@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SyncTweetsTest</string>
+    <string name="title_activity_tweets_in_map">TweetsInMapActivity</string>
 </resources>

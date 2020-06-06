@@ -1,13 +1,13 @@
 package com.ayova.synctweetstest.models
 
-data class Statuse(
+data class Status(
     val contributors: Any?,
     val coordinates: Any?,
     val created_at: String,
     val entities: Entities,
     val favorite_count: Int,
     val favorited: Boolean,
-    val geo: Any?,
+    val geo: StatusGeo?,
     val id: Long,
     val id_str: String,
     val in_reply_to_screen_name: Any?,

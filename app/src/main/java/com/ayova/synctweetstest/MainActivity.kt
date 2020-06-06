@@ -1,5 +1,6 @@
 package com.ayova.synctweetstest
 
+import android.content.Intent
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.util.Base64
 import android.util.Log
 import com.ayova.synctweetstest.models.*
 import com.ayova.synctweetstest.twitterApi.TwitterApi
+import kotlinx.android.synthetic.main.activity_main.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -22,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var prefs: SharedPreferences
     var retrievedToken: String = ""
     lateinit var allStatuses: ArrayList<ListOfStatusesItem>
-    var tweetsList: ArrayList<Statuse> = arrayListOf()
+    var tweetsList: ArrayList<Status> = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +37,10 @@ class MainActivity : AppCompatActivity() {
         if (retrievedToken.isEmpty()){
             getAccessToken("ferrari")
         } else {
-            searchTweets("mustang")
+            searchTweets("ford")
         }
+
+        main_btn_gotomap.setOnClickListener { startActivity(Intent(this, TweetsInMapActivity::class.java)) }
     }
 
     /**
@@ -91,7 +95,9 @@ class MainActivity : AppCompatActivity() {
 //                    Log.v(TAG, body.statuses.toString())
                         tweetsList.addAll(body.statuses)
                         tweetsList.forEach { status ->
-                            Log.v(TAG,"${status.text}, created: ${status.created_at}")
+                            if (status.geo?.coordinates != null) {
+                                Log.i(TAG, "\n${status.coordinates.toString()}\n${status.geo.coordinates[0]} ${status.geo.coordinates[1]}\n")
+                            }
                         }
                     } else {
                         Log.e(TAG, response.errorBody()!!.toString())
@@ -113,13 +119,6 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getStatusesFilter(track: String) {
         TwitterApi.initServiceStream()
-//OAuth oauth_consumer_key="xvz1evFS4wEEPTGEFPHBog",
-//oauth_nonce="kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg",
-//oauth_signature="tnnArxj06cWHq44gCs1OSKk%2FjLY%3D",
-//oauth_signature_method="HMAC-SHA1",
-//oauth_timestamp="1318622958",
-//oauth_token="370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
-//oauth_version="1.0"
 
         val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
         val oauth_nonce = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
