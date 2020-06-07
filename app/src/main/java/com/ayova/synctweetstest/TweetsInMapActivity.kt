@@ -28,11 +28,10 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-
-
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        // check there are tweets to show in the map
         if (TweetsWithGeo.tweets.isNullOrEmpty()){
             Log.e(TAG, "no tweets passed to map ${TweetsWithGeo.tweets.toString()}" )
         } else {
@@ -40,7 +39,8 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
             Log.v(TAG, tweetsList[0].toString())
         }
 
-        mMap = googleMap // map to set markers on
+        // map to set markers on
+        mMap = googleMap
 
         // setting markers in map base on geo location of each tweet
         for (tweet in tweetsList) {
@@ -48,14 +48,11 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
             mMap.addMarker(MarkerOptions().position(pos).title(tweet.text.trim()).draggable(false))
             mMap.moveCamera(CameraUpdateFactory.newLatLng(pos)) // will zoom into the each marker added, stopping in the last one
             mMap.setOnInfoWindowClickListener {
-                // create instance of fragment w/ details
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.map, TweetDetailsFragment.newInstance(it.id)) // to show the details in the same view
-                    .addToBackStack("map") // to be able and go back to it
+                    .addToBackStack("map") // to be able and go back to the map
                     .commit()
             }
         }
-
     }
-
 }

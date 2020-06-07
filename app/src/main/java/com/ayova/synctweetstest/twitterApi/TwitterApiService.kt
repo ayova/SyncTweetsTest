@@ -18,17 +18,17 @@ interface TwitterApiService {
      * @param q is the text to be matched in the tweets
      * @param count is the number of tweets to retrieve.
      *        Defaults to 15 if none provided. Max is 100.
-     *        I'm setting it to retrieve 50 each time.
      * @param result_type filters how tweets should be gathered
-     *        Mixed, popular or recent tweets. I'm going for recent.
+     *        Mixed, popular or recent tweets
      * @param geocode is used to restrict tweets from which geocode
      *        are displayed. I'm using it because otherwise, most
      *        recent tweets, usually don't provide geo location
      *        e.g. @Query("geocode")geocode: String = "40.4636688,-3.7492199,900km" - all of Spain
      */
     @GET("1.1/search/tweets.json")
-    fun searchTweets(@Header("Authorization")auth: String, @Query("q")query: String, @Query("result_type")result_type: String = "recent",
-                     @Query("count")count: Int = 50): Call<SearchTweets>
+    fun searchTweets(@Header("Authorization")auth: String, @Query("q")query: String,
+                     @Query("result_type")result_type: String = "recent",
+                     @Query("count")count: Int = 100): Call<SearchTweets>
 
     @GET("1.1/lists/statuses.json")
     fun listStatuses(@Header("Authorization")auth: String, @Query("list_id")listId: String = "1130185227375038465",

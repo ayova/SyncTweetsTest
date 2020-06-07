@@ -34,15 +34,13 @@ class MainActivity : AppCompatActivity() {
         retrievedToken = prefs.getString(BEARER_TOKEN, "").toString()
 
         TwitterApi.initServiceApi()
-        if (retrievedToken.isEmpty()){
-            getAccessToken("ferrari")
-        } else {
-            searchTweets("instagram.")
-        }
+
 
         main_btn_gotomap.setOnClickListener {
-            if (!tweetsList.isNullOrEmpty()) { // check there are some tweets to pass through the bundle
-                startActivity(Intent(this, TweetsInMapActivity::class.java))
+            if (retrievedToken.isEmpty()){
+                getAccessToken(main_et_search.text.toString())
+            } else {
+                searchTweets(main_et_search.text.toString())
             }
         }
     }
@@ -100,12 +98,27 @@ class MainActivity : AppCompatActivity() {
                         }
                         TweetsWithGeo.tweets?.addAll(tweetsList as ArrayList<Status>)
                         Log.i(TAG, TweetsWithGeo.tweets.toString())
+                        goToMap()
                     } else { Log.e(TAG, response.errorBody()!!.toString()) }
                 }
                 override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }
             })
         }
     }
+
+    private fun goToMap(){
+        if (!tweetsList.isNullOrEmpty()) { // check there are some tweets to pass through the bundle
+            startActivity(Intent(this, TweetsInMapActivity::class.java))
+        }
+    }
+
+
+
+
+
+
+
+
 
     /**
      * Function used to search for tweets based on search terms

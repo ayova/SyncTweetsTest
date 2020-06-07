@@ -51,6 +51,6 @@ class TweetDetailsFragment : Fragment() {
 
         detailsfragment_text.text = tweetToShow.text
         detailsfragment_user.text = "${tweetToShow.user.screen_name} (${tweetToShow.user.name})"
-        detailsfragment_rts.text = tweetToShow.retweet_count.toString()
+        detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets"
     }
 }
