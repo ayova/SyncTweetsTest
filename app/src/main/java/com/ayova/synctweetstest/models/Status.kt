@@ -1,9 +1,9 @@
 package com.ayova.synctweetstest.models
 
+
 data class Status(
     val contributors: Any?,
     val coordinates: Any?,
-    val created_at: String,
     val entities: Entities,
     val favorite_count: Int,
     val favorited: Boolean,

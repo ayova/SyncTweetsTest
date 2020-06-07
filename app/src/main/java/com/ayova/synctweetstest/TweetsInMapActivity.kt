@@ -2,6 +2,9 @@ package com.ayova.synctweetstest
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import com.ayova.synctweetstest.models.Status
+import com.ayova.synctweetstest.models.TweetsWithGeo
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -12,7 +15,9 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
+    val TAG = "myapp"
     private lateinit var mMap: GoogleMap
+    lateinit var tweetsList: ArrayList<Status>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,6 +26,13 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        if (TweetsWithGeo.tweets.isNullOrEmpty()){
+            Log.e(TAG, "no tweets passed to map ${TweetsWithGeo.tweets.toString()}" )
+        } else {
+            tweetsList.addAll(TweetsWithGeo.tweets)
+            Log.v(TAG, tweetsList.toString())
+        }
     }
 
     /**
@@ -40,5 +52,7 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
     }
+
+
 
 }

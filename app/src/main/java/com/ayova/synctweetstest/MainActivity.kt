@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var prefs: SharedPreferences
     var retrievedToken: String = ""
     lateinit var allStatuses: ArrayList<ListOfStatusesItem>
-    var tweetsList: ArrayList<Status> = arrayListOf()
+    var tweetsList: ArrayList<Status>? = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +37,14 @@ class MainActivity : AppCompatActivity() {
         if (retrievedToken.isEmpty()){
             getAccessToken("ferrari")
         } else {
-            searchTweets("ford")
+            searchTweets("instagram.")
         }
 
-        main_btn_gotomap.setOnClickListener { startActivity(Intent(this, TweetsInMapActivity::class.java)) }
+        main_btn_gotomap.setOnClickListener {
+            if (tweetsList != null) { // check there are some tweets to pass through the bundle
+                startActivity(Intent(this, TweetsInMapActivity::class.java))
+            }
+        }
     }
 
     /**
@@ -48,33 +52,30 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getAccessToken(query: String) {
         val concatKeys = "${TwitterApi.API_CONSUMER_KEY}:${TwitterApi.API_SECRET_CONSUMER_KEY}"
-        val call = TwitterApi.service.getAccessToken("Basic ${Base64.encodeToString(concatKeys.toByteArray(), 1738)}", "client_credentials")
+
+        val call = TwitterApi.service.getAccessToken(
+            "Basic ${Base64.encodeToString(concatKeys.toByteArray(), 1738)}",
+            "client_credentials"
+        )
+
         call.enqueue(object : Callback<OAuthToken> {
             override fun onResponse(call: Call<OAuthToken>, response: Response<OAuthToken>) {
                 val body = response.body()
                 Log.v(TAG, response.toString())
                 if (response.isSuccessful && body != null) {
-
                     // assign the access token to be saved
                     retrievedToken = body.access_token
-
                     // save retrievedToken to shared prefs
                     val editor = prefs.edit()
                     editor.putString(BEARER_TOKEN, retrievedToken)
                     editor.apply()
-
-                    // once the token has been fetched, search for the tweets
+                    /* Once the token has been fetched, search for the tweets.
+                       If other functions could take place, it'd be better to
+                       abstract this from here. */
                     searchTweets(query)
-
-//                    Log.v(TAG, "Basic ${Base64.encodeToString(concatKeys.toByteArray(), 1738)}")
-//                    Log.v(TAG, body.toString())
-                } else {
-                    Log.e(TAG, response.errorBody()!!.string())
-                }
+                } else { Log.e(TAG, response.errorBody()!!.string()) }
             }
-            override fun onFailure(call: Call<OAuthToken>, t: Throwable) {
-                Log.e(TAG, t.message!!)
-            }
+            override fun onFailure(call: Call<OAuthToken>, t: Throwable) { Log.e(TAG, t.message!!) }
         })
     }
 
@@ -82,30 +83,28 @@ class MainActivity : AppCompatActivity() {
      * Function for fetching tweets from the search API endpoint
      */
     private fun searchTweets(query: String) {
-
         if (retrievedToken.isEmpty()) { // if access token not available, generate one
             getAccessToken(query)
-
         } else {
             val call = TwitterApi.service.searchTweets("Bearer $retrievedToken", query)
             call.enqueue(object : Callback<SearchTweets>{
                 override fun onResponse(call: Call<SearchTweets>, response: Response<SearchTweets>) {
                     val body =  response.body()
                     if (response.isSuccessful && body != null) {
-//                    Log.v(TAG, body.statuses.toString())
-                        tweetsList.addAll(body.statuses)
-                        tweetsList.forEach { status ->
+                        // here i only append those tweets that do have a geo location
+                        body.statuses.forEach { status ->
                             if (status.geo?.coordinates != null) {
                                 Log.i(TAG, "\n${status.coordinates.toString()}\n${status.geo.coordinates[0]} ${status.geo.coordinates[1]}\n")
+                                tweetsList?.add(status)
+
+                                // add tweets to global object to ease access throughout the app
+                                TweetsWithGeo.tweets?.clear()
+                                TweetsWithGeo.tweets?.addAll(tweetsList!!)
                             }
                         }
-                    } else {
-                        Log.e(TAG, response.errorBody()!!.toString())
-                    }
+                    } else { Log.e(TAG, response.errorBody()!!.toString()) }
                 }
-                override fun onFailure(call: Call<SearchTweets>, t: Throwable) {
-                    Log.e(TAG, t.message!!)
-                }
+                override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }
             })
         }
     }
@@ -152,6 +151,9 @@ class MainActivity : AppCompatActivity() {
     /**
      * Function to get tweet's by list_id...
      * This a one-time connection, not stream
+     *
+     * Function used for testing with API at the
+     * beginning, i.e. initial setup
      */
     private fun getTweetsByList(){
         TwitterApi.initServiceApi()

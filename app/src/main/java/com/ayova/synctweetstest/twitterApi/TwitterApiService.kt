@@ -24,11 +24,11 @@ interface TwitterApiService {
      * @param geocode is used to restrict tweets from which geocode
      *        are displayed. I'm using it because otherwise, most
      *        recent tweets, usually don't provide geo location
-     *        e.g. @Query("geocode")geocode: String = "51.444722,-2.598272,150km"
+     *        e.g. @Query("geocode")geocode: String = "40.4636688,-3.7492199,900km" - all of Spain
      */
     @GET("1.1/search/tweets.json")
     fun searchTweets(@Header("Authorization")auth: String, @Query("q")query: String, @Query("result_type")result_type: String = "recent",
-                     @Query("count")count: Int = 50, @Query("geocode")geocode: String = "40.4636688,-3.7492199,900km"): Call<SearchTweets>
+                     @Query("count")count: Int = 50): Call<SearchTweets>
 
     @GET("1.1/lists/statuses.json")
     fun listStatuses(@Header("Authorization")auth: String, @Query("list_id")listId: String = "1130185227375038465",
