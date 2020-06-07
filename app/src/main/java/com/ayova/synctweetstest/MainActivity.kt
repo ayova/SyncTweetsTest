@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         main_btn_gotomap.setOnClickListener {
-            if (tweetsList != null) { // check there are some tweets to pass through the bundle
+            if (!tweetsList.isNullOrEmpty()) { // check there are some tweets to pass through the bundle
                 startActivity(Intent(this, TweetsInMapActivity::class.java))
             }
         }
@@ -96,12 +96,10 @@ class MainActivity : AppCompatActivity() {
                             if (status.geo?.coordinates != null) {
                                 Log.i(TAG, "\n${status.coordinates.toString()}\n${status.geo.coordinates[0]} ${status.geo.coordinates[1]}\n")
                                 tweetsList?.add(status)
-
-                                // add tweets to global object to ease access throughout the app
-                                TweetsWithGeo.tweets?.clear()
-                                TweetsWithGeo.tweets?.addAll(tweetsList!!)
                             }
                         }
+                        TweetsWithGeo.tweets?.addAll(tweetsList as ArrayList<Status>)
+                        Log.i(TAG, TweetsWithGeo.tweets.toString())
                     } else { Log.e(TAG, response.errorBody()!!.toString()) }
                 }
                 override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }

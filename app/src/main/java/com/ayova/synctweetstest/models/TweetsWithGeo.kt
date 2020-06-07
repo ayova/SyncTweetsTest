@@ -1,5 +1,5 @@
 package com.ayova.synctweetstest.models
 
 object TweetsWithGeo {
-    val tweets: ArrayList<Status>? = null
+    var tweets: ArrayList<Status> = arrayListOf() // initialize to empty ArrayList, check at point of use
 }
