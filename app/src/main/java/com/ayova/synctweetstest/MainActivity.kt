@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
+import android.widget.Toast
 import com.ayova.synctweetstest.models.*
 import com.ayova.synctweetstest.twitterApi.TwitterApi
 import kotlinx.android.synthetic.main.activity_main.*
@@ -13,7 +14,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.net.URLEncoder
-import java.util.*
+import java.security.SecureRandom
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
@@ -22,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     val PREFERENCES_FILE = "com.ayova.synctweetstest.prefs"
     val BEARER_TOKEN = "bearer_token"
     lateinit var prefs: SharedPreferences
-    var retrievedToken: String = ""
+    var bearerToken: String = ""
     lateinit var allStatuses: ArrayList<ListOfStatusesItem>
     var tweetsList: ArrayList<Status>? = arrayListOf()
 
@@ -31,14 +32,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         prefs = this.getSharedPreferences(PREFERENCES_FILE, 0)
-        retrievedToken = prefs.getString(BEARER_TOKEN, "").toString()
+        bearerToken = prefs.getString(BEARER_TOKEN, "").toString()
 
         TwitterApi.initServiceApi()
 
+        getStatusesFilter("q")
 
         main_btn_gotomap.setOnClickListener {
-            if (retrievedToken.isEmpty()){
-                getAccessToken(main_et_search.text.toString())
+            if (bearerToken.isEmpty()){
+                getBearerToken(main_et_search.text.toString())
             } else {
                 searchTweets(main_et_search.text.toString())
             }
@@ -48,7 +50,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Function used to generate an access token for the app
      */
-    private fun getAccessToken(query: String) {
+    private fun getBearerToken(query: String) {
         val concatKeys = "${TwitterApi.API_CONSUMER_KEY}:${TwitterApi.API_SECRET_CONSUMER_KEY}"
 
         val call = TwitterApi.service.getAccessToken(
@@ -62,10 +64,10 @@ class MainActivity : AppCompatActivity() {
                 Log.v(TAG, response.toString())
                 if (response.isSuccessful && body != null) {
                     // assign the access token to be saved
-                    retrievedToken = body.access_token
+                    bearerToken = body.access_token
                     // save retrievedToken to shared prefs
                     val editor = prefs.edit()
-                    editor.putString(BEARER_TOKEN, retrievedToken)
+                    editor.putString(BEARER_TOKEN, bearerToken)
                     editor.apply()
                     /* Once the token has been fetched, search for the tweets.
                        If other functions could take place, it'd be better to
@@ -81,10 +83,11 @@ class MainActivity : AppCompatActivity() {
      * Function for fetching tweets from the search API endpoint
      */
     private fun searchTweets(query: String) {
-        if (retrievedToken.isEmpty()) { // if access token not available, generate one
-            getAccessToken(query)
+        TwitterApi.initServiceApi()
+        if (bearerToken.isEmpty()) { // if access token not available, generate one
+            getBearerToken(query)
         } else {
-            val call = TwitterApi.service.searchTweets("Bearer $retrievedToken", query)
+            val call = TwitterApi.service.searchTweets("Bearer $bearerToken", query)
             call.enqueue(object : Callback<SearchTweets>{
                 override fun onResponse(call: Call<SearchTweets>, response: Response<SearchTweets>) {
                     val body =  response.body()
@@ -106,19 +109,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Navigate to the map activity if there are tweets to be displayed
+     * otherwise, display warning through a Toast message
+     */
     private fun goToMap(){
         if (!tweetsList.isNullOrEmpty()) { // check there are some tweets to pass through the bundle
             startActivity(Intent(this, TweetsInMapActivity::class.java))
+        } else {
+            Toast.makeText(this, "No tweets found matching the given search terms...", Toast.LENGTH_SHORT).show()
         }
     }
-
-
-
-
-
-
-
-
 
     /**
      * Function used to search for tweets based on search terms
@@ -131,17 +132,33 @@ class MainActivity : AppCompatActivity() {
         TwitterApi.initServiceStream()
 
         val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
-        val oauth_nonce = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
+        val oauth_nonce = Base64.encodeToString(SecureRandom(SecureRandom.getSeed(32)).toString().toByteArray(), 1738) //"kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZaNu2VS4cg"
         val oauth_signature_method = "HMAC-SHA1"
-        val oauth_timestamp = Date()
-        val oauth_token = retrievedToken
-        val paramString = "track=$track&oauth_consumer_key=$oauth_consumer_key&oauth_nonce=$oauth_nonce&oauth_signature_method=$oauth_signature_method&oauth_timestamp=$oauth_timestamp&oauth_token=$oauth_token&oauth_version=1.0"
+        val oauth_timestamp = System.currentTimeMillis()
+        val oauth_token = TwitterApi.API_ACCESS_TOKEN
+        val paramString = "oauth_consumer_key=$oauth_consumer_key&oauth_nonce=$oauth_nonce&oauth_signature_method=$oauth_signature_method&oauth_timestamp=$oauth_timestamp&oauth_token=$oauth_token&oauth_version=1.0&track=$track"
         val httpMethod = "POST"
         val url = "${TwitterApi.API_STREAM_URL}1.1/statuses/filter.json?track=$track"
         val signatureBaseString = "$httpMethod&${URLEncoder.encode(url,"utf-8")}&${URLEncoder.encode(paramString,"utf-8")}"
-//        val oauth_signature =
+        val signingKey = "${TwitterApi.API_SECRET_CONSUMER_KEY}&${TwitterApi.API_ACCESS_TOKEN_SECRET}"
+        val hmacGenerated = HmacSha1Signature.calculateRFC2104HMAC(signatureBaseString, signingKey)
+        val oauth_signature = Base64.encodeToString(hmacGenerated.toByteArray(),1738)
 
-        val call = TwitterApi.service.getStatusesFilter("Bearer $retrievedToken", track)
+        // authorization header
+        val authorization = "Oauth oauth_consumer_key=\"$oauth_consumer_key\",oauth_nonce=\"$oauth_nonce\",oauth_signature=\"$oauth_signature\",oauth_signature_method=\"$oauth_signature_method\",oauth_timestamp=\"$oauth_timestamp\",oauth_token=\"$oauth_token\",oauth_version=\"1.0\""
+
+        // logs
+        Log.e(TAG, "paramString = $paramString")
+        Log.e(TAG, "url = $url")
+        Log.e(TAG, "nonce = $oauth_nonce")
+        Log.e(TAG, "signatureBaseString = $signatureBaseString")
+        Log.e(TAG, "signingKey = $signingKey")
+        Log.e(TAG, "hmacGenerated = $hmacGenerated")
+        Log.e(TAG, "oauth_signature = $oauth_signature")
+        Log.e(TAG, "authorization = $authorization")
+
+
+        val call = TwitterApi.service.getStatusesFilter(authorization, track)
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
                 val statuses = response.body()
@@ -157,7 +174,18 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, t.message!!)
             }
         })
+
+        // uncomment following line to print the request headers
+        // Log.v(TAG, call.request().headers().toString())
+
     }
+
+
+
+
+
+
+
 
     /**
      * Function to get tweet's by list_id...
@@ -168,7 +196,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getTweetsByList(){
         TwitterApi.initServiceApi()
-        val call = TwitterApi.service.listStatuses("Bearer $retrievedToken")
+        val call = TwitterApi.service.listStatuses("Bearer $bearerToken")
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
                 val body = response.body()

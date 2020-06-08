@@ -30,6 +30,9 @@ interface TwitterApiService {
                      @Query("result_type")result_type: String = "recent",
                      @Query("count")count: Int = 100): Call<SearchTweets>
 
+    /**
+     * only used for an example. main call of the app is getStatusesFilter
+     */
     @GET("1.1/lists/statuses.json")
     fun listStatuses(@Header("Authorization")auth: String, @Query("list_id")listId: String = "1130185227375038465",
                      @Query("count")count: Int = 1): Call<ListOfStatuses>
