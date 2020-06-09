@@ -13,20 +13,20 @@ class TwitterAuth {
      * Function for creating the Authorization header
      * Includes calls to generate oauth_nonce and oauth_signature
      */
-    fun setAuthorizationHeader(): String {
+    fun setAuthorizationHeader(track: String): String {
         val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
         val oauth_nonce = generateOauthNonce()
         val oauth_signature_method = "HMAC-SHA1"
         val oauth_timestamp = System.currentTimeMillis().toString()
         val oauth_token = TwitterApi.API_ACCESS_TOKEN
         val oauth_version = "1.0"
-        val track = "q"
+        val track = track
         val oauth_signature = generateOauthSignature(
             oauth_consumer_key, oauth_nonce, oauth_signature_method,
             oauth_timestamp, oauth_token, oauth_version, track)
 
-        Log.v(TAG, "oauth_nonce --> $oauth_nonce")
-        Log.v(TAG, "oauth_signature --> $oauth_signature")
+//        Log.v(TAG, "oauth_nonce --> $oauth_nonce")
+//        Log.v(TAG, "oauth_signature --> $oauth_signature")
 
         var authorization = "Oauth "
         // I'm using sortedMapOf so it is sorted automatically (as twitter API asks)
@@ -45,13 +45,13 @@ class TwitterAuth {
             val percentedValue = URLEncoder.encode(value,"utf-8")
 //            Log.v(TAG, "K: $percentedKey, V: $percentedValue")
             authorization += if (key == "oauth_version") {
-                "$percentedKey=\"$percentedValue\""
+                "$percentedKey=\"$percentedValue\"" // skip comma at the end
             } else {
                 "$percentedKey=\"$percentedValue\","
             }
         }
 
-        Log.d(TAG, "authorization -------> $authorization")
+//        Log.d(TAG, "authorization -------> $authorization")
 
         return authorization
     }

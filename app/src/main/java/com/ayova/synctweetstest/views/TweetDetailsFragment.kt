@@ -9,7 +9,10 @@ import android.view.ViewGroup
 
 import com.ayova.synctweetstest.R
 import com.ayova.synctweetstest.models.TweetsWithGeo
+import com.google.android.material.shape.RoundedCornerTreatment
+import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.fragment_tweet_details.*
+import kotlin.math.round
 
 private const val COMING_TWEET_ID = "coming_tweet_id"
 
@@ -50,7 +53,12 @@ class TweetDetailsFragment : Fragment() {
         val tweetToShow = TweetsWithGeo.tweets[id!!.toInt()]
 
         detailsfragment_text.text = tweetToShow.text
-        detailsfragment_user.text = "${tweetToShow.user.screen_name} (${tweetToShow.user.name})"
-        detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets"
+        detailsfragment_user_photo
+        Picasso.get().load(tweetToShow.user.profile_image_url_https).into(detailsfragment_user_photo)
+        detailsfragment_user.text = "@${tweetToShow.user.screen_name} (${tweetToShow.user.name})"
+        detailsfragment_id.text = "Tweet with id: ${tweetToShow.id_str}"
+        detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets, and ${tweetToShow.favorite_count} favorites"
+        detailsfragment_coords.text = "Latitude: ${tweetToShow.geo!!.coordinates[0]}, longitude: ${tweetToShow.geo!!.coordinates[1]}"
+        detailsfragment_lang.text = "Language: ${tweetToShow.lang}"
     }
 }

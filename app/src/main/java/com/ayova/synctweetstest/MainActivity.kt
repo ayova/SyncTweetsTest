@@ -130,12 +130,10 @@ class MainActivity : AppCompatActivity() {
      * Function used to search for tweets based on search terms
      * This function would help implement realtime updates to the map pins,
      * as well as it'd allow for connection to the stream API endpoint.
-     *
-     * Will try implementing it again later!
      */
     private fun getStatusesFilter(track: String) {
         TwitterApi.initServiceStream()
-        val call = TwitterApi.service.getStatusesFilter(TwitterAuth().setAuthorizationHeader(), track)
+        val call = TwitterApi.service.getStatusesFilter(TwitterAuth().setAuthorizationHeader(track), track)
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
                 val statuses = response.body()
