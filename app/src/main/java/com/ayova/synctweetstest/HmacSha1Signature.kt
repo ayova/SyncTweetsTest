@@ -1,9 +1,12 @@
 package com.ayova.synctweetstest
 
+import android.util.Log
 import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
 import java.security.SignatureException
 import java.util.*
+import javax.crypto.KeyGenerator
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 

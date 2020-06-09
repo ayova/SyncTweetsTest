@@ -15,6 +15,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.net.URLEncoder
 import java.security.SecureRandom
+import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         TwitterApi.initServiceApi()
 
+        setAuthorizationHeader()
         getStatusesFilter("q")
 
         main_btn_gotomap.setOnClickListener {
@@ -81,6 +83,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Function for fetching tweets from the search API endpoint
+     * Used while getStatusesFilter isn't working
      */
     private fun searchTweets(query: String) {
         TwitterApi.initServiceApi()
@@ -122,6 +125,119 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Function for creating the Authorization header
+     * Includes calls to generate oauth_nonce and oauth_signature
+     */
+    private fun setAuthorizationHeader(): String {
+        val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
+        val oauth_nonce = generateOauthNonce()
+        val oauth_signature = generateOauthSignature()
+        val oauth_signature_method = "HMAC-SHA1"
+        val oauth_timestamp = System.currentTimeMillis().toString()
+        val oauth_token = TwitterApi.API_ACCESS_TOKEN
+        val oauth_version = "1.0"
+
+        Log.v(TAG, "oauth_nonce --> $oauth_nonce")
+        Log.v(TAG, "oauth_signature --> $oauth_signature")
+
+        var authorization = "Oauth "
+        // I'm using sortedMapOf so it is sorted automatically (as twitter API asks)
+        val map = sortedMapOf(
+            "oauth_consumer_key" to oauth_consumer_key,
+            "oauth_nonce" to oauth_nonce.trim(),
+            "oauth_signature" to oauth_signature,
+            "oauth_signature_method" to oauth_signature_method,
+            "oauth_timestamp" to oauth_timestamp,
+            "oauth_token" to oauth_token ,
+            "oauth_version" to oauth_version
+        )
+        // url encode each key and value then add it to the authorization string
+        for ((key,value) in map) {
+            var percentedKey = URLEncoder.encode(key,"utf-8")
+            var percentedValue = URLEncoder.encode(value,"utf-8")
+//            Log.v(TAG, "K: $percentedKey, V: $percentedValue")
+            if (key == "oauth_version") {
+                authorization += "$percentedKey=\"$percentedValue\""
+            } else {
+                authorization += "$percentedKey=\"$percentedValue\","
+            }
+        }
+
+        Log.d(TAG, "authorization -------> $authorization")
+
+        return authorization
+    }
+
+    /**
+     * Generate oauth_nonce by generating 32 bytes of
+     * random data, then Base64 encoding it
+     * @return the Base64 encoded string
+     */
+    private fun generateOauthNonce(): String{
+        var random = Random()
+        var byteArr = ByteArray(32)
+        random.nextBytes(byteArr)
+
+        return Base64.encodeToString(byteArr, Base64.DEFAULT)
+    }
+
+    /**
+     * Generate oauth_signature
+     */
+    private fun generateOauthSignature(): String{
+        /* Collecting parameters */
+        val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
+        var oauth_nonce = generateOauthNonce()
+        val oauth_signature_method = "HMAC-SHA1"
+        val oauth_timestamp = System.currentTimeMillis().toString()
+        val oauth_token = TwitterApi.API_ACCESS_TOKEN
+        val oauth_version = "1.0"
+        val track = "q"
+
+        var paramString = "" // string with the keys and values url encoded
+
+        // I'm using sortedMapOf so it is sorted automatically (as twitter API asks)
+        val map = sortedMapOf<String, String>(
+            "oauth_consumer_key" to oauth_consumer_key,
+            "oauth_nonce" to oauth_nonce,
+            "oauth_signature_method" to oauth_signature_method,
+            "oauth_timestamp" to oauth_timestamp,
+            "oauth_token" to oauth_token ,
+            "oauth_version" to oauth_version,
+            "track" to track
+        )
+        // url encode each key and value then add it to the parameters string
+        for ((key,value) in map) {
+            // Log.v(TAG, "K: $key, V: $value")
+            if (key == "track") {
+                paramString += "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}"
+            } else {
+                paramString += "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}&"
+            }
+        }
+
+        Log.v(TAG, paramString)
+
+        val httpMethod = "POST"
+        val url = URLEncoder.encode("${TwitterApi.API_STREAM_URL}1.1/statuses/filter.json?track=$track", "utf-8")
+        val percentedParamString = URLEncoder.encode(paramString, "utf-8")
+
+        /* Creating the signature base string */
+        var signatureBaseString = "$httpMethod&$url&$percentedParamString"
+        Log.v(TAG, "signaturebase --> $signatureBaseString")
+
+        val percentedConsumerSecret = URLEncoder.encode(TwitterApi.API_SECRET_CONSUMER_KEY, "utf-8")
+        val percentedAccessToken = URLEncoder.encode(TwitterApi.API_ACCESS_TOKEN_SECRET, "utf-8")
+        val signingKey = "$percentedConsumerSecret&$percentedAccessToken"
+        Log.v(TAG, "signingkey --> $signingKey")
+
+        val signature = HmacSha1Signature.calculateRFC2104HMAC(signatureBaseString, signingKey)
+        Log.e(TAG, Base64.encodeToString(signature.toByteArray(),Base64.DEFAULT))
+        return signature
+
+    }
+
+    /**
      * Function used to search for tweets based on search terms
      * This function would help implement realtime updates to the map pins,
      * as well as it'd allow for connection to the stream API endpoint.
@@ -130,8 +246,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getStatusesFilter(track: String) {
         TwitterApi.initServiceStream()
-
+/*
         val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
+
+        val allowedChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
         val oauth_nonce = Base64.encodeToString(SecureRandom(SecureRandom.getSeed(32)).toString().toByteArray(), 1738) //"kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZaNu2VS4cg"
         val oauth_signature_method = "HMAC-SHA1"
         val oauth_timestamp = System.currentTimeMillis()
@@ -156,9 +275,9 @@ class MainActivity : AppCompatActivity() {
         Log.e(TAG, "hmacGenerated = $hmacGenerated")
         Log.e(TAG, "oauth_signature = $oauth_signature")
         Log.e(TAG, "authorization = $authorization")
+*/
 
-
-        val call = TwitterApi.service.getStatusesFilter(authorization, track)
+        val call = TwitterApi.service.getStatusesFilter(setAuthorizationHeader(), track)
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
                 val statuses = response.body()
@@ -176,16 +295,9 @@ class MainActivity : AppCompatActivity() {
         })
 
         // uncomment following line to print the request headers
-        // Log.v(TAG, call.request().headers().toString())
+        Log.v(TAG, call.request().headers().toString())
 
     }
-
-
-
-
-
-
-
 
     /**
      * Function to get tweet's by list_id...
