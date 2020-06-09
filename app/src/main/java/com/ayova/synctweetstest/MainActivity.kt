@@ -131,11 +131,14 @@ class MainActivity : AppCompatActivity() {
     private fun setAuthorizationHeader(): String {
         val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
         val oauth_nonce = generateOauthNonce()
-        val oauth_signature = generateOauthSignature()
         val oauth_signature_method = "HMAC-SHA1"
         val oauth_timestamp = System.currentTimeMillis().toString()
         val oauth_token = TwitterApi.API_ACCESS_TOKEN
         val oauth_version = "1.0"
+        val track = "q"
+        val oauth_signature = generateOauthSignature(
+            oauth_consumer_key, oauth_nonce, oauth_signature_method,
+            oauth_timestamp, oauth_token, oauth_version, track)
 
         Log.v(TAG, "oauth_nonce --> $oauth_nonce")
         Log.v(TAG, "oauth_signature --> $oauth_signature")
@@ -153,13 +156,13 @@ class MainActivity : AppCompatActivity() {
         )
         // url encode each key and value then add it to the authorization string
         for ((key,value) in map) {
-            var percentedKey = URLEncoder.encode(key,"utf-8")
-            var percentedValue = URLEncoder.encode(value,"utf-8")
+            val percentedKey = URLEncoder.encode(key,"utf-8")
+            val percentedValue = URLEncoder.encode(value,"utf-8")
 //            Log.v(TAG, "K: $percentedKey, V: $percentedValue")
-            if (key == "oauth_version") {
-                authorization += "$percentedKey=\"$percentedValue\""
+            authorization += if (key == "oauth_version") {
+                "$percentedKey=\"$percentedValue\""
             } else {
-                authorization += "$percentedKey=\"$percentedValue\","
+                "$percentedKey=\"$percentedValue\","
             }
         }
 
@@ -174,8 +177,8 @@ class MainActivity : AppCompatActivity() {
      * @return the Base64 encoded string
      */
     private fun generateOauthNonce(): String{
-        var random = Random()
-        var byteArr = ByteArray(32)
+        val random = Random()
+        val byteArr = ByteArray(32)
         random.nextBytes(byteArr)
 
         return Base64.encodeToString(byteArr, Base64.DEFAULT)
@@ -184,39 +187,38 @@ class MainActivity : AppCompatActivity() {
     /**
      * Generate oauth_signature
      */
-    private fun generateOauthSignature(): String{
-        /* Collecting parameters */
-        val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
-        var oauth_nonce = generateOauthNonce()
-        val oauth_signature_method = "HMAC-SHA1"
-        val oauth_timestamp = System.currentTimeMillis().toString()
-        val oauth_token = TwitterApi.API_ACCESS_TOKEN
-        val oauth_version = "1.0"
-        val track = "q"
+    private fun generateOauthSignature(
+        oauthConsumerKey: String,
+        oauthNonce: String,
+        oauthSignatureMethod: String,
+        oauthTimestamp: String,
+        oauthToken: String,
+        oauthVersion: String,
+        track: String
+    ): String{
 
         var paramString = "" // string with the keys and values url encoded
 
         // I'm using sortedMapOf so it is sorted automatically (as twitter API asks)
         val map = sortedMapOf<String, String>(
-            "oauth_consumer_key" to oauth_consumer_key,
-            "oauth_nonce" to oauth_nonce,
-            "oauth_signature_method" to oauth_signature_method,
-            "oauth_timestamp" to oauth_timestamp,
-            "oauth_token" to oauth_token ,
-            "oauth_version" to oauth_version,
+            "oauth_consumer_key" to oauthConsumerKey,
+            "oauth_nonce" to oauthNonce,
+            "oauth_signature_method" to oauthSignatureMethod,
+            "oauth_timestamp" to oauthTimestamp,
+            "oauth_token" to oauthToken,
+            "oauth_version" to oauthVersion,
             "track" to track
         )
         // url encode each key and value then add it to the parameters string
         for ((key,value) in map) {
             // Log.v(TAG, "K: $key, V: $value")
-            if (key == "track") {
-                paramString += "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}"
+            paramString += if (key == "track") {
+                "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}"
             } else {
-                paramString += "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}&"
+                "${URLEncoder.encode(key, "utf-8")}=${URLEncoder.encode(value,"utf-8")}&"
             }
         }
-
-        Log.v(TAG, paramString)
+//        Log.v(TAG, paramString)
 
         val httpMethod = "POST"
         val url = URLEncoder.encode("${TwitterApi.API_STREAM_URL}1.1/statuses/filter.json?track=$track", "utf-8")
@@ -224,16 +226,14 @@ class MainActivity : AppCompatActivity() {
 
         /* Creating the signature base string */
         var signatureBaseString = "$httpMethod&$url&$percentedParamString"
-        Log.v(TAG, "signaturebase --> $signatureBaseString")
+//        Log.v(TAG, "signaturebase --> $signatureBaseString")
 
         val percentedConsumerSecret = URLEncoder.encode(TwitterApi.API_SECRET_CONSUMER_KEY, "utf-8")
         val percentedAccessToken = URLEncoder.encode(TwitterApi.API_ACCESS_TOKEN_SECRET, "utf-8")
         val signingKey = "$percentedConsumerSecret&$percentedAccessToken"
-        Log.v(TAG, "signingkey --> $signingKey")
+//        Log.v(TAG, "signingkey --> $signingKey")
 
-        val signature = HmacSha1Signature.calculateRFC2104HMAC(signatureBaseString, signingKey)
-        Log.e(TAG, Base64.encodeToString(signature.toByteArray(),Base64.DEFAULT))
-        return signature
+        return Base64.encodeToString(HmacSha1Signature.calculateRFC2104HMAC(signatureBaseString, signingKey).toByteArray(), Base64.DEFAULT)
 
     }
 
@@ -246,37 +246,6 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getStatusesFilter(track: String) {
         TwitterApi.initServiceStream()
-/*
-        val oauth_consumer_key = TwitterApi.API_CONSUMER_KEY
-
-        val allowedChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-        val oauth_nonce = Base64.encodeToString(SecureRandom(SecureRandom.getSeed(32)).toString().toByteArray(), 1738) //"kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZaNu2VS4cg"
-        val oauth_signature_method = "HMAC-SHA1"
-        val oauth_timestamp = System.currentTimeMillis()
-        val oauth_token = TwitterApi.API_ACCESS_TOKEN
-        val paramString = "oauth_consumer_key=$oauth_consumer_key&oauth_nonce=$oauth_nonce&oauth_signature_method=$oauth_signature_method&oauth_timestamp=$oauth_timestamp&oauth_token=$oauth_token&oauth_version=1.0&track=$track"
-        val httpMethod = "POST"
-        val url = "${TwitterApi.API_STREAM_URL}1.1/statuses/filter.json?track=$track"
-        val signatureBaseString = "$httpMethod&${URLEncoder.encode(url,"utf-8")}&${URLEncoder.encode(paramString,"utf-8")}"
-        val signingKey = "${TwitterApi.API_SECRET_CONSUMER_KEY}&${TwitterApi.API_ACCESS_TOKEN_SECRET}"
-        val hmacGenerated = HmacSha1Signature.calculateRFC2104HMAC(signatureBaseString, signingKey)
-        val oauth_signature = Base64.encodeToString(hmacGenerated.toByteArray(),1738)
-
-        // authorization header
-        val authorization = "Oauth oauth_consumer_key=\"$oauth_consumer_key\",oauth_nonce=\"$oauth_nonce\",oauth_signature=\"$oauth_signature\",oauth_signature_method=\"$oauth_signature_method\",oauth_timestamp=\"$oauth_timestamp\",oauth_token=\"$oauth_token\",oauth_version=\"1.0\""
-
-        // logs
-        Log.e(TAG, "paramString = $paramString")
-        Log.e(TAG, "url = $url")
-        Log.e(TAG, "nonce = $oauth_nonce")
-        Log.e(TAG, "signatureBaseString = $signatureBaseString")
-        Log.e(TAG, "signingKey = $signingKey")
-        Log.e(TAG, "hmacGenerated = $hmacGenerated")
-        Log.e(TAG, "oauth_signature = $oauth_signature")
-        Log.e(TAG, "authorization = $authorization")
-*/
-
         val call = TwitterApi.service.getStatusesFilter(setAuthorizationHeader(), track)
         call.enqueue(object : Callback<ListOfStatuses> {
             override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {

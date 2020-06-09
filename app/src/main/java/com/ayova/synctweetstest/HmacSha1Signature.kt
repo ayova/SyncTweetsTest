@@ -10,16 +10,19 @@ import javax.crypto.KeyGenerator
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Code adapted from:
+ * https://gist.github.com/ishikawa/88599/3195bdeecabeb38aa62872ab61877aefa6aef89e#gistcomment-2184166
+ */
+
 object HmacSha1Signature {
     private val HMAC_SHA1_ALGORITHM = "HmacSHA1"
 
     private fun toHexString(bytes: ByteArray): String {
         val formatter = Formatter()
-
         for (b in bytes) {
             formatter.format("%02x", b)
         }
-
         return formatter.toString()
     }
 
