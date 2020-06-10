@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
+import android.widget.Toast
 import com.ayova.synctweetstest.models.OAuthToken
 import com.ayova.synctweetstest.models.SearchTweets
 import com.ayova.synctweetstest.models.Status
@@ -66,14 +67,20 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // check there are tweets to show in the map
         if (TweetsWithGeo.tweets.isNullOrEmpty()){
-            Log.e(TAG, "no tweets passed to map, check tweetsList" )
+            Toast.makeText(this,"No tweets matching search term found!", Toast.LENGTH_SHORT).show()
+            Log.e(TAG, "no results" )
         } else {
+            // sort arraylist
+            fun selector(tweet: Status): Long = tweet.id
+            TweetsWithGeo.tweets.sortBy { selector(it) }
+
             // setting markers in map base on geo location of each tweet
-            for (tweet in TweetsWithGeo.tweets) {
+            Log.e(TAG, "TWG has: ${TweetsWithGeo.tweets.size}")
+            TweetsWithGeo.tweets.forEach { tweet ->
                 val pos = LatLng(tweet.geo!!.coordinates[0],tweet.geo!!.coordinates[1])
                 val marker = mMap.addMarker(MarkerOptions().position(pos).title(tweet.text.trim()).draggable(false))
-                marker.tag = tweetIdInList.toString()
-                Log.e(TAG, "${tweetIdInList.toString()}, ${marker.tag}, ${tweet.id_str}, ${TweetsWithGeo.tweets[tweetIdInList].id_str}")
+                marker.tag = tweet.id_str
+//                Log.e(TAG, "${tweetIdInList.toString()}, ${marker.tag}, ${tweet.id_str}, ${TweetsWithGeo.tweets[tweetIdInList].id_str}")
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(pos)) // will zoom into the each marker added, stopping in the last one
                 mMap.setOnInfoWindowClickListener {
                     supportFragmentManager.beginTransaction()
@@ -109,7 +116,12 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                                 TweetsWithGeo.tweets.add(status)
                             }
                         }
-                        Log.i(TAG, "Tweets: ${TweetsWithGeo.tweets}")
+                        fun selector(tweet: Status): Long = tweet.id
+                        TweetsWithGeo.tweets.sortBy { selector(it) }
+//                        TweetsWithGeo.tweets.forEach {
+//                            Log.v(TAG,it.id_str)
+//                        }
+//                        Log.i(TAG, "Tweets: ${TweetsWithGeo.tweets}")
                     } else { Log.e(TAG, response.errorBody()!!.toString()) }
                 }
                 override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }

@@ -27,7 +27,7 @@ class TweetDetailsFragment : Fragment() {
         super.onCreate(savedInstanceState)
         arguments?.let {
             tweetId = it.getString(COMING_TWEET_ID)
-            Log.i(TAG, tweetId.toString())
+//            Log.i(TAG, tweetId.toString())
         }
 
     }
@@ -54,10 +54,16 @@ class TweetDetailsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (tweetId != null) {
-            val tweet = TweetsWithGeo.tweets[tweetId!!.toInt()]
-            Log.e(TAG, "id in:${tweetId}, all tweets: ${TweetsWithGeo.tweets}")
-            setTweetDetails(tweet)
-        } else {
+            fun selector(tweet: Status): Long = tweet.id
+            TweetsWithGeo.tweets.sortBy { selector(it) }
+
+            val tweet = TweetsWithGeo.tweets.filter { it.id_str == tweetId }
+            Log.v(TAG, "Sent id: $tweetId, filtered: ${tweet[0].id_str}") // uncomment to check it's the right tweet
+
+            // Because there can only be ONE tweet with the given id, the array will
+            // always have just 1 element, therefore we always want to get the 0th element
+            setTweetDetails(tweet[0])
+        } else { // if no id provided
             Log.e(TAG, "id error")
             Toast.makeText(activity!!,"Sorry, can't open that tweet :(", Toast.LENGTH_SHORT).show()
             activity!!.supportFragmentManager.popBackStack()
