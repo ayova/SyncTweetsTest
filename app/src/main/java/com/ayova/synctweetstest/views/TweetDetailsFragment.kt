@@ -6,11 +6,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 
 import com.ayova.synctweetstest.R
+import com.ayova.synctweetstest.models.Status
 import com.ayova.synctweetstest.models.TweetsWithGeo
 import com.google.android.material.shape.RoundedCornerTreatment
 import com.squareup.picasso.Picasso
+import com.squareup.picasso.Transformation
 import kotlinx.android.synthetic.main.fragment_tweet_details.*
 import kotlin.math.round
 
@@ -24,6 +27,7 @@ class TweetDetailsFragment : Fragment() {
         super.onCreate(savedInstanceState)
         arguments?.let {
             tweetId = it.getString(COMING_TWEET_ID)
+            Log.i(TAG, tweetId.toString())
         }
 
     }
@@ -49,12 +53,25 @@ class TweetDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val id = tweetId?.removePrefix("m")
-        val tweetToShow = TweetsWithGeo.tweets[id!!.toInt()]
+        if (tweetId != null) {
+            val tweet = TweetsWithGeo.tweets[tweetId!!.toInt()]
+            Log.e(TAG, "id in:${tweetId}, all tweets: ${TweetsWithGeo.tweets}")
+            setTweetDetails(tweet)
+        } else {
+            Log.e(TAG, "id error")
+            Toast.makeText(activity!!,"Sorry, can't open that tweet :(", Toast.LENGTH_SHORT).show()
+            activity!!.supportFragmentManager.popBackStack()
+        }
 
+    }
+
+    private fun setTweetDetails (tweetToShow: Status) {
         detailsfragment_text.text = tweetToShow.text
-        detailsfragment_user_photo
-        Picasso.get().load(tweetToShow.user.profile_image_url_https).into(detailsfragment_user_photo)
+        Picasso.get()
+            .load(tweetToShow.user.profile_image_url_https)
+            .resize(70,70)
+            .centerCrop()
+            .into(detailsfragment_user_photo)
         detailsfragment_user.text = "@${tweetToShow.user.screen_name} (${tweetToShow.user.name})"
         detailsfragment_id.text = "Tweet with id: ${tweetToShow.id_str}"
         detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets, and ${tweetToShow.favorite_count} favorites"

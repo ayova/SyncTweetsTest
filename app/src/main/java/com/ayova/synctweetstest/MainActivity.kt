@@ -33,26 +33,28 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        prefs = this.getSharedPreferences(PREFERENCES_FILE, 0)
-        bearerToken = prefs.getString(BEARER_TOKEN, "").toString()
+        startActivity(Intent(this, TweetsInMapActivity::class.java))
 
-        TwitterApi.initServiceApi()
-
-        getStatusesFilter("q")
-
-        main_btn_gotomap.setOnClickListener {
-            if (bearerToken.isEmpty()){
-                getBearerToken(main_et_search.text.toString())
-            } else {
-                searchTweets(main_et_search.text.toString())
-            }
-        }
+//        prefs = this.getSharedPreferences(PREFERENCES_FILE, 0)
+//        bearerToken = prefs.getString(BEARER_TOKEN, "").toString()
+//
+//        TwitterApi.initServiceApi()
+//
+//        getStatusesFilter("q")
+//
+//        main_btn_gotomap.setOnClickListener {
+//            if (bearerToken.isEmpty()){
+//                getBearerToken(main_et_search.text.toString())
+//            } else {
+//                searchTweets(main_et_search.text.toString())
+//            }
+//        }
     }
 
     /**
      * Function used to generate an access token for the app
      */
-    private fun getBearerToken(query: String) {
+    private fun getBearerToken(query: String?) {
         val concatKeys = "${TwitterApi.API_CONSUMER_KEY}:${TwitterApi.API_SECRET_CONSUMER_KEY}"
 
         val call = TwitterApi.service.getAccessToken(
@@ -74,7 +76,9 @@ class MainActivity : AppCompatActivity() {
                     /* Once the token has been fetched, search for the tweets.
                        If other functions could take place, it'd be better to
                        abstract this from here. */
-                    searchTweets(query)
+                    if (!query.isNullOrEmpty()) {
+                        searchTweets(query)
+                    }
                 } else { Log.e(TAG, response.errorBody()!!.string()) }
             }
             override fun onFailure(call: Call<OAuthToken>, t: Throwable) { Log.e(TAG, t.message!!) }
