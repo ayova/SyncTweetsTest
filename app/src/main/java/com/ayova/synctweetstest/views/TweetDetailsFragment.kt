@@ -56,9 +56,15 @@ class TweetDetailsFragment : Fragment() {
 
         if (tweetId != null) {
             val tweet = TweetsWithGeo.tweets.filter { it.id_str == tweetId }
-
-            // Getting 0th element because there can only ever be one tweet with the given id_str (id)
-            setTweetDetails(tweet[0])
+            Log.v(TAG, tweet.toString().trim())
+            if (tweet.isNullOrEmpty()){
+                Toast.makeText(activity!!,"Sorry, can't open that tweet :(", Toast.LENGTH_SHORT).show()
+                TweetsWithGeo.tweets.clear()
+                activity!!.supportFragmentManager.popBackStack()
+            } else {
+                // Getting 0th element because there can only ever be one tweet with the given id_str (id)
+                setTweetDetails(tweet[0])
+            }
         } else { // if no id provided
             Log.e(TAG, "id error")
             Toast.makeText(activity!!,"Sorry, can't open that tweet :(", Toast.LENGTH_SHORT).show()

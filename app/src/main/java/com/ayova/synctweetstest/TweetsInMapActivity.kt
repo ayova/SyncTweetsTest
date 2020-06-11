@@ -1,7 +1,5 @@
 package com.ayova.synctweetstest
 
-import android.app.Activity
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -22,13 +20,14 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_tweets_in_map.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import kotlin.concurrent.thread
 
 private const val COMING_TWEET_ID = "coming_tweet_id"
 
@@ -68,16 +67,14 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     private fun updateMap(query: String) {
         searchTweets(query) { tweetsList ->
-            Log.i(TAG, "updating map with so-called response")
             mMap.clear()
-            Log.d(TAG, tweetsList.toString())
-//            Log.d(TAG, TweetsWithGeo.tweets.toString())
+
             // check there are tweets to show in the map
             if (tweetsList.isNullOrEmpty()){
                 Toast.makeText(this,"No tweets matching search term found!", Toast.LENGTH_SHORT).show()
-                Log.e(TAG, "no results" )
+                Log.e(TAG, "No tweets found" )
             } else {
-                // setting markers in map base on geo location of each tweet
+                // setting markers in map based on geo location of each tweet
                 Log.e(TAG, "TWG has: ${tweetsList.size}")
                 tweetsList.forEach { tweet ->
                     val pos = LatLng(tweet.geo!!.coordinates[0],tweet.geo.coordinates[1])
@@ -95,33 +92,6 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         }
-
-        /*   Before implementing callback on searchTweets   */
-//        Log.v(TAG, "updateMap()")
-//        mMap.clear()
-//
-//        // check there are tweets to show in the map
-//        if (TweetsWithGeo.tweets.isNullOrEmpty()){
-//            Toast.makeText(this,"No tweets matching search term found!", Toast.LENGTH_SHORT).show()
-//            Log.e(TAG, "no results" )
-//        } else {
-//            // setting markers in map base on geo location of each tweet
-//            Log.e(TAG, "TWG has: ${TweetsWithGeo.tweets.size}")
-//            TweetsWithGeo.tweets.forEach { tweet ->
-//                val pos = LatLng(tweet.geo!!.coordinates[0],tweet.geo.coordinates[1])
-//                val marker = mMap.addMarker(MarkerOptions().position(pos).title(tweet.text.trim()).draggable(false))
-//                marker.tag = tweet.id_str
-//                mMap.moveCamera(CameraUpdateFactory.newLatLng(pos)) // will zoom into the each marker added, stopping in the last one
-//                mMap.setOnInfoWindowClickListener {
-//                    supportFragmentManager.beginTransaction()
-//                        .replace(R.id.map, TweetDetailsFragment.newInstance(it.tag.toString())) // to show the details in the same view
-//                        .addToBackStack("map") // to be able and go back to the map
-//                        .commit()
-//
-//                    toggleSearchElements() // hide search elements
-//                }
-//            }
-//        }
     }
 
     /**
@@ -134,24 +104,26 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         val call = TwitterApi.service.searchTweets("Bearer $bearerToken", query)
         call.enqueue(object : Callback<SearchTweets> {
             override fun onResponse(call: Call<SearchTweets>, response: Response<SearchTweets>) {
-                val body =  response.body()
+                val body = response.body()
                 if (response.isSuccessful && body != null) {
                     TweetsWithGeo.tweets.clear()
                     TweetsWithGeo.tweets = arrayListOf()
-                    // here i only append those tweets that do have a geo location
+                    // only append those tweets that do have a geo location
                     body.statuses.forEach { status ->
                         if (status.geo?.coordinates != null) {
-//                                Log.i(TAG, "\n${status.coordinates.toString()}\n${status.geo.coordinates[0]} ${status.geo.coordinates[1]}\n")
                             TweetsWithGeo.tweets.add(status)
                         }
                     }
-                } else { Log.e(TAG, response.errorBody()!!.toString()) }
+                } else {
+                    Log.e(TAG, response.errorBody()!!.toString())
+                }
             }
-            override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }
+            override fun onFailure(call: Call<SearchTweets>, t: Throwable) {
+                Log.e(TAG, t.message!!)
+            }
+
         })
-        val tweets = TweetsWithGeo.tweets
-        Log.i(TAG, "got the response (tweets)")
-        onTweetsRetrieved(tweets)
+        onTweetsRetrieved(TweetsWithGeo.tweets)
     }
 
     /**
