@@ -7,16 +7,18 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Toast
 
 import com.ayova.synctweetstest.R
+import com.ayova.synctweetstest.TweetsInMapActivity
 import com.ayova.synctweetstest.models.Status
 import com.ayova.synctweetstest.models.TweetsWithGeo
-import com.google.android.material.shape.RoundedCornerTreatment
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.squareup.picasso.Picasso
-import com.squareup.picasso.Transformation
 import kotlinx.android.synthetic.main.fragment_tweet_details.*
-import kotlin.math.round
 
 private const val COMING_TWEET_ID = "coming_tweet_id"
 
@@ -80,5 +82,16 @@ class TweetDetailsFragment : Fragment() {
         detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets, and ${tweetToShow.favorite_count} favorites"
         detailsfragment_coords.text = "Latitude: ${tweetToShow.geo!!.coordinates[0]}, longitude: ${tweetToShow.geo!!.coordinates[1]}"
         detailsfragment_lang.text = "Language: ${tweetToShow.lang}"
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // set search elements visible again
+        activity!!.findViewById<TextInputEditText>(R.id.tweets_in_map_et_search)
+            .visibility = LinearLayout.VISIBLE
+        activity!!.findViewById<TextInputLayout>(R.id.tweets_in_map_et_search_outline)
+            .visibility = LinearLayout.VISIBLE
+        activity!!.findViewById<MaterialButton>(R.id.tweets_in_map_btn_refresh)
+            .visibility = LinearLayout.VISIBLE
     }
 }
