@@ -7,10 +7,7 @@ import android.util.Base64
 import android.util.Log
 import android.widget.LinearLayout
 import android.widget.Toast
-import com.ayova.synctweetstest.models.OAuthToken
-import com.ayova.synctweetstest.models.SearchTweets
-import com.ayova.synctweetstest.models.Status
-import com.ayova.synctweetstest.models.TweetsWithGeo
+import com.ayova.synctweetstest.models.*
 import com.ayova.synctweetstest.twitterApi.TwitterApi
 import com.ayova.synctweetstest.views.TweetDetailsFragment
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -57,9 +54,33 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         tweets_in_map_btn_refresh.setOnClickListener {
             val searchTerm = tweets_in_map_et_search.text.toString()
             updateMap(searchTerm)
+            Thread.sleep(200L)
+            streamFilter(searchTerm)
         }
     }
 
+    /**
+     * Function meant to retreave tweets based on a search term in realtime
+     * Unfortunately authentication doesn't seem to work properly quite yet.
+     */
+    private fun streamFilter(query: String) {
+        TwitterApi.initServiceStream()
+        val call = TwitterApi.service.getStatusesFilter(TwitterAuth().setAuthorizationHeader(query),query)
+        call.enqueue(object : Callback<ListOfStatuses> {
+            override fun onResponse(call: Call<ListOfStatuses>, response: Response<ListOfStatuses>) {
+                if (response.errorBody() != null) {
+                    Log.e(TAG, "Error --> \n\n${response.errorBody()!!.string()}")
+                }
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    Log.v(TAG, body.toString())
+                } else { Log.e(TAG, "Response unsuccessful")}
+            }
+            override fun onFailure(call: Call<ListOfStatuses>, t: Throwable) {
+                Log.e(TAG, "Streams failed. Error:", t)
+            }
+        })
+    }
 
     /**
      * Function responsible for updating the markers on the map
