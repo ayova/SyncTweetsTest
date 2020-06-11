@@ -1,5 +1,6 @@
 package com.ayova.synctweetstest.views
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -27,9 +28,7 @@ class TweetDetailsFragment : Fragment() {
         super.onCreate(savedInstanceState)
         arguments?.let {
             tweetId = it.getString(COMING_TWEET_ID)
-//            Log.i(TAG, tweetId.toString())
         }
-
     }
 
     override fun onCreateView(
@@ -54,30 +53,28 @@ class TweetDetailsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         if (tweetId != null) {
-            fun selector(tweet: Status): Long = tweet.id
-            TweetsWithGeo.tweets.sortBy { selector(it) }
-
             val tweet = TweetsWithGeo.tweets.filter { it.id_str == tweetId }
-            Log.v(TAG, "Sent id: $tweetId, filtered: ${tweet[0].id_str}") // uncomment to check it's the right tweet
 
-            // Because there can only be ONE tweet with the given id, the array will
-            // always have just 1 element, therefore we always want to get the 0th element
+            // Getting 0th element because there can only ever be one tweet with the given id_str (id)
             setTweetDetails(tweet[0])
         } else { // if no id provided
             Log.e(TAG, "id error")
             Toast.makeText(activity!!,"Sorry, can't open that tweet :(", Toast.LENGTH_SHORT).show()
             activity!!.supportFragmentManager.popBackStack()
         }
-
     }
 
+    @SuppressLint("SetTextI18n") // to avoid text setting lint
     private fun setTweetDetails (tweetToShow: Status) {
         detailsfragment_text.text = tweetToShow.text
+
+        // set user photo
         Picasso.get()
             .load(tweetToShow.user.profile_image_url_https)
             .resize(70,70)
             .centerCrop()
             .into(detailsfragment_user_photo)
+
         detailsfragment_user.text = "@${tweetToShow.user.screen_name} (${tweetToShow.user.name})"
         detailsfragment_id.text = "Tweet with id: ${tweetToShow.id_str}"
         detailsfragment_rts.text = "${tweetToShow.retweet_count} retweets, and ${tweetToShow.favorite_count} favorites"

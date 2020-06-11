@@ -29,7 +29,6 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     val TAG = "myapp"
     private lateinit var mMap: GoogleMap
-//    var tweetsList: ArrayList<Status> = arrayListOf()
     val PREFERENCES_FILE = "com.ayova.synctweetstest.prefs"
     val BEARER_TOKEN = "bearer_token"
     lateinit var prefs: SharedPreferences
@@ -39,22 +38,21 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tweets_in_map)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        TwitterApi.initServiceApi()
 
         prefs = this.getSharedPreferences(PREFERENCES_FILE, 0)
         bearerToken = prefs.getString(BEARER_TOKEN, "").toString()
 
-        TwitterApi.initServiceApi()
-
         tweets_in_map_btn_refresh.setOnClickListener {
             if (bearerToken.isEmpty()){
                 getBearerToken(tweets_in_map_et_search.text.toString())
-                onMapReady(mMap)
+                updateMap(mMap)
             } else {
                 searchTweets(tweets_in_map_et_search.text.toString())
-                onMapReady(mMap)
+                updateMap(mMap)
             }
         }
     }
@@ -62,8 +60,11 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         // map to set markers on
         mMap = googleMap
+
+    }
+
+    private fun updateMap(googleMap: GoogleMap) {
         mMap.clear()
-        var tweetIdInList = 0
 
         // check there are tweets to show in the map
         if (TweetsWithGeo.tweets.isNullOrEmpty()){
@@ -80,7 +81,6 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                 val pos = LatLng(tweet.geo!!.coordinates[0],tweet.geo!!.coordinates[1])
                 val marker = mMap.addMarker(MarkerOptions().position(pos).title(tweet.text.trim()).draggable(false))
                 marker.tag = tweet.id_str
-//                Log.e(TAG, "${tweetIdInList.toString()}, ${marker.tag}, ${tweet.id_str}, ${TweetsWithGeo.tweets[tweetIdInList].id_str}")
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(pos)) // will zoom into the each marker added, stopping in the last one
                 mMap.setOnInfoWindowClickListener {
                     supportFragmentManager.beginTransaction()
@@ -88,7 +88,6 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                         .addToBackStack("map") // to be able and go back to the map
                         .commit()
                 }
-                tweetIdInList++
             }
         }
     }
@@ -116,12 +115,6 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                                 TweetsWithGeo.tweets.add(status)
                             }
                         }
-                        fun selector(tweet: Status): Long = tweet.id
-                        TweetsWithGeo.tweets.sortBy { selector(it) }
-//                        TweetsWithGeo.tweets.forEach {
-//                            Log.v(TAG,it.id_str)
-//                        }
-//                        Log.i(TAG, "Tweets: ${TweetsWithGeo.tweets}")
                     } else { Log.e(TAG, response.errorBody()!!.toString()) }
                 }
                 override fun onFailure(call: Call<SearchTweets>, t: Throwable) { Log.e(TAG, t.message!!) }
@@ -151,9 +144,8 @@ class TweetsInMapActivity : AppCompatActivity(), OnMapReadyCallback {
                     val editor = prefs.edit()
                     editor.putString(BEARER_TOKEN, bearerToken)
                     editor.apply()
-                    /* Once the token has been fetched, search for the tweets.
-                       If other functions could take place, it'd be better to
-                       abstract this from here. */
+                    /* Once the token has been fetched, search for the tweets. If other functions could
+                       take place, it'd be better to abstract this from here. */
                     if (!query.isNullOrEmpty()) {
                         searchTweets(query)
                     }
